@@ -1,4 +1,13 @@
 use super::Distance;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct JSONDFA {
+    original_string: String,
+    initial_state: u32,
+    trans_matrix: Vec<Vec<u32>>,
+    acceptance_state: Vec<u32>
+}
 
 /// Sink state. See [DFA](./index.html)
 pub const SINK_STATE: u32 = 0u32;
@@ -52,6 +61,32 @@ impl DFA {
     /// Returns the initial state
     pub fn initial_state(&self) -> u32 {
         self.initial_state
+    }
+
+    pub fn to_json(&self, t: u32, alpha: &str, original_str: &str) -> JSONDFA {
+        let mut tm: Vec<Vec<u32>> = Vec::new();
+        let mut acc: Vec<u32> = Vec::new();
+        for row in self.transitions.iter() {
+            let mut r: Vec<u32> = Vec::new();
+            for ch in alpha.chars() {
+                r.push(row[ch as usize]);
+            }
+            tm.push(r);
+        }
+        for (q, s) in self.distances.iter().enumerate() {
+            for i in 0..t+1 {
+                if *s == Distance::Exact(i as u8) {
+                    acc.push(q as u32);
+                }
+            }
+        }
+        let dfa_json = JSONDFA {
+            original_string: original_str.to_string(),
+            initial_state: self.initial_state,
+            trans_matrix: tm,
+            acceptance_state: acc
+        };
+        dfa_json
     }
 
     /// Helper function that consumes all of the bytes
